@@ -11,6 +11,26 @@ const routes = [
     component: Home
   },
   {
+    path: '/Three',
+    name: 'Three',
+    component: () => import(/* webpackChunkName: "about" */ '../views/Three.vue')
+  },
+  {
+    path: '/Model',
+    name: 'Model',
+    component: () => import(/* webpackChunkName: "about" */ '../views/Model.vue')
+  },
+  {
+    path: '/MyModel',
+    name: 'MyModel',
+    component: () => import(/* webpackChunkName: "about" */ '../views/MyModel.vue')
+  },
+  {
+    path: '/Async',
+    name: 'Async',
+    component: () => import(/* webpackChunkName: "about" */ '../views/Async.vue')
+  },
+  {
     path: '/about',
     name: 'About',
     // route level code-splitting

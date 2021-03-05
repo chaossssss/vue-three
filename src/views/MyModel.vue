@@ -10,7 +10,7 @@ import { OBJLoader } from "three-obj-mtl-loader";
 // import {DDSLoader} from "three/examples/jsm/loaders/DDSLoader";
 // import { CSS2DRenderer, CSS2DObject } from "three-css2drender";
 // import { AmbientLight, LightShadow } from "three";
-const OrbitControls = require("three-orbit-controls")(THREE);
+// const OrbitControls = require("three-orbit-controls")(THREE);
 export default {
   name: "vue-three",
   data() {
@@ -18,7 +18,8 @@ export default {
       scene: null,
       camera: null,
       renderer: null,
-      objects: []
+      objects: [],
+      OrbitControls: null
     };
   },
   methods: {
@@ -38,7 +39,7 @@ export default {
         1,
         1000
       );
-      this.camera.position.z = 10;
+      this.camera.position.z = 4;
       /* 
           渲染器
         */
@@ -46,16 +47,21 @@ export default {
       this.renderer.setSize(container.clientWidth, container.clientHeight);
       this.renderer.setClearColor(0xb9d3ff, 1);
       container.appendChild(this.renderer.domElement);
-      new OrbitControls(this.camera, this.renderer.domElement);
-      // controls.addEventListener("change",this.animate())
+      // 控制相机
+      // this.OrbitControls = new OrbitControls(this.camera, this.renderer.domElement);
     },
     // 加载模型
     loadObj() {
       let _this = this;
       const loader = new OBJLoader();
       loader.load("/model/tree.obj", function (obj) {
+        // let mesh = new THREE.Mesh()
+        obj.position.set(0,-0.7,0);
+        obj.name = 'tree'
         _this.scene.add(obj);
-        _this.objects.push(obj)
+        console.log("obj",obj)
+        // console.log("isMesh",obj.children[0].isMesh)
+        _this.objects.push(obj.children[0])
       });
     },
     // 拖动方法
@@ -66,21 +72,20 @@ export default {
       // );
       // this.scene.add(transformControls);
       // 过滤不是 Mesh 的物体,例如辅助网格对象
-      var objects = [];
+      // var objects = [];
       console.log("this.scene",this.scene)
-      for (let i = 0; i < this.scene.children.length; i++) {
-        // if (this.scene.children[i].isMesh) {
-          objects.push(this.scene.children[i]);
-        // }
-      }
-      console.log("objects",objects)
+      // this.calleArr(this.scene) //获取所有mesh
+      console.log("this.objects",this.objects)
+      // console.log("objects",objects)
       // 初始化拖拽控件
       let dragControls = new DragControls(this.objects, this.camera, this.renderer.domElement);
       dragControls.addEventListener("dragstart", function (event) {
+        // this.OrbitControls.enabled = false
         console.log("dragstart",event)
       });
 
       dragControls.addEventListener("dragend", function (event) {
+        // this.OrbitControls.enabled = false
         console.log("dragend",event)
       });
       // console.log(dragControls)
@@ -99,7 +104,7 @@ export default {
       light.position.multiplyScalar(0.3);
       this.scene.add(light);
       //添加环境光
-      let ambientLight = new THREE.AmbientLight("#ffffff");
+      let ambientLight = new THREE.AmbientLight("#ffdddd");
       this.scene.add(ambientLight);
     },
     // 动画效果
@@ -107,6 +112,19 @@ export default {
       requestAnimationFrame(this.animate);
       this.renderer.render(this.scene, this.camera);
     },
+    calleArr(array){
+      for(let i in array){
+        let data = array[i]
+        if(data.children){
+          this.calleArr(data.children)
+        }else{
+          console.log("data",data)
+          // if(data.isMesh){
+          //   this.objects.push(data.children)
+          // }
+        }
+      }
+    }
   },
   mounted() {
     this.init();

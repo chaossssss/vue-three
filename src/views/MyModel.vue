@@ -6,11 +6,16 @@ import * as THREE from "three";
 import DragControls from "drag-controls";
 DragControls.install({ THREE: THREE });
 import { OBJLoader } from "three-obj-mtl-loader";
+// 辅助工具
+import * as dat from 'dat.gui'
+import * as Stats from 'stats.js'
 // import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 // import {DDSLoader} from "three/examples/jsm/loaders/DDSLoader";
 // import { CSS2DRenderer, CSS2DObject } from "three-css2drender";
 // import { AmbientLight, LightShadow } from "three";
 // const OrbitControls = require("three-orbit-controls")(THREE);
+
+var stats = new Stats()
 export default {
   name: "vue-three",
   data() {
@@ -50,6 +55,13 @@ export default {
       // 控制相机
       // this.OrbitControls = new OrbitControls(this.camera, this.renderer.domElement);
     },
+    dat(){
+      let controls = new function() {
+        this.rotationSpeed = 0.02
+      }
+      var gui = new dat.GUI()
+      gui.add(controls,'rotationSpeed',0,0.5)
+    },
     // 加载模型
     loadObj() {
       let _this = this;
@@ -61,7 +73,7 @@ export default {
         _this.scene.add(obj);
         console.log("obj",obj)
         // console.log("isMesh",obj.children[0].isMesh)
-        _this.objects.push(obj.children[0])
+        // _this.objects.push(obj.children[0])
       });
     },
     // 拖动方法
@@ -109,6 +121,8 @@ export default {
     },
     // 动画效果
     animate() {
+      stats.begin()
+      stats.end()
       requestAnimationFrame(this.animate);
       this.renderer.render(this.scene, this.camera);
     },
@@ -128,6 +142,9 @@ export default {
   },
   mounted() {
     this.init();
+    this.dat()
+    stats.showPanel(0)
+    document.body.appendChild(stats.dom)
     this.loadObj();
     this.light();
     this.animate();

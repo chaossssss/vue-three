@@ -26,6 +26,16 @@ const routes = [
     component: () => import(/* webpackChunkName: "about" */ '../views/MyModel.vue')
   },
   {
+    path: '/Demo1',
+    name: 'Demo1',
+    component: () => import(/* webpackChunkName: "about" */ '../views/Demo1.vue')
+  },
+  {
+    path: '/Demo2',
+    name: 'Demo2',
+    component: () => import(/* webpackChunkName: "about" */ '../views/Demo2.vue')
+  },
+  {
     path: '/Async',
     name: 'Async',
     component: () => import(/* webpackChunkName: "about" */ '../views/Async.vue')

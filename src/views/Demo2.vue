@@ -6,12 +6,14 @@
 
 <script>
 import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 const OrbitControls = require("three-orbit-controls")(THREE);
 // 辅助工具
 import * as dat from 'dat.gui'
 import * as Stats from 'stats.js'
 var stats = new Stats()
 var scene,camera,renderer
+var model
 export default {
   name: "Demo2",
   data() {
@@ -21,6 +23,7 @@ export default {
   },
   mounted() {
     this.init()
+    this.robot()
     this.animate()
     this.dat()
   },
@@ -132,8 +135,19 @@ export default {
 
       const cameraHelper = new THREE.CameraHelper(pointLight.shadow.camera)
       scene.add(cameraHelper)
-
-
+    },
+    // 机器人
+    robot(){
+      let gltfLoader = new GLTFLoader().setPath('/model/gltf/')
+      gltfLoader.load("RobotExpressive.glb",function(gltf){
+        model = gltf.scene
+        console.log("model",model)
+        for(let k in gltf.children){
+          gltf.children[k].castShadow = true
+        }
+        model.position.set(15,0,-15)
+        scene.add(model)
+      })
     },
     animate(){
       requestAnimationFrame(this.animate)

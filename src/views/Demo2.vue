@@ -9,33 +9,34 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 const OrbitControls = require("three-orbit-controls")(THREE);
 // 辅助工具
-import * as dat from 'dat.gui'
-import * as Stats from 'stats.js'
-var stats = new Stats()
-var scene,camera,renderer
-var model
+import * as dat from "dat.gui";
+import * as Stats from "stats.js";
+var stats = new Stats();
+var scene, camera, renderer;
+var model, mixer, clock, curve;
+clock = new THREE.Clock();
+var progress = 0;
 export default {
   name: "Demo2",
   data() {
-    return {
-
-    };
+    return {};
   },
   mounted() {
-    this.init()
-    this.robot()
-    this.animate()
-    this.dat()
+    this.init();
+    this.curve();
+    this.robot();
+    this.animate();
+    this.dat();
   },
   methods: {
     init() {
       // 创建场景
       scene = new THREE.Scene();
-      let container = document.getElementById("container")
+      let container = document.getElementById("container");
 
       // 状态栏
-      stats.showPanel(0)
-      container.appendChild(stats.dom)
+      stats.showPanel(0);
+      container.appendChild(stats.dom);
 
       // 创建相机
       camera = new THREE.PerspectiveCamera( // 透视投影相机
@@ -46,14 +47,13 @@ export default {
       );
       camera.position.set(-10, 10, 40); // 设置相机位置
 
-
       // 点光源
-      const pointLight = new THREE.PointLight(0xffffff, 1, 10000)
-      pointLight.position.set(15,60,16)
-      pointLight.castShadow = true
-      const pointLightHelper = new THREE.PointLightHelper(pointLight,8)
-      scene.add(pointLight)
-      scene.add(pointLightHelper)
+      const pointLight = new THREE.PointLight(0xffffff, 1, 10000);
+      pointLight.position.set(15, 60, 16);
+      pointLight.castShadow = true;
+      const pointLightHelper = new THREE.PointLightHelper(pointLight, 8);
+      scene.add(pointLight);
+      scene.add(pointLightHelper);
 
       // 创建渲染器
       renderer = new THREE.WebGLRenderer({
@@ -62,7 +62,7 @@ export default {
       renderer.setPixelRatio(window.devicePixelRatio); // 设置设备像素比率。通常用于HiDPI设备，以防止输出画布模糊。
       renderer.setSize(window.innerWidth, window.innerHeight); // 设置渲染器大小
       renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       container.appendChild(renderer.domElement);
 
       // 创建控制器
@@ -81,12 +81,14 @@ export default {
       scene.add(mesh); // 添加到场景中
 
       // 球
-      const sphereGeometry = new THREE.SphereGeometry(2,20,20)
-      const sphereMaterial = new THREE.MeshStandardMaterial({color:0x7777ff})
-      const sphere = new THREE.Mesh(sphereGeometry,sphereMaterial)
-      sphere.castShadow = true
-      sphere.position.set(-10,2,-8)
-      scene.add(sphere)
+      const sphereGeometry = new THREE.SphereGeometry(2, 20, 20);
+      const sphereMaterial = new THREE.MeshStandardMaterial({
+        color: 0x7777ff,
+      });
+      const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+      sphere.castShadow = true;
+      sphere.position.set(-10, 2, -8);
+      scene.add(sphere);
 
       // 创建平面
       const planeGeometry = new THREE.PlaneGeometry(300, 300); // 生成平面几何
@@ -100,21 +102,21 @@ export default {
       scene.add(planeMesh); // 添加到场景中
 
       // 平面
-      const gridHelper = new THREE.GridHelper(300,300)
-      scene.add(gridHelper)
+      const gridHelper = new THREE.GridHelper(300, 300);
+      scene.add(gridHelper);
 
       // 环境光
-      scene.add(new THREE.AmbientLight(0xffffff))
+      scene.add(new THREE.AmbientLight(0xffffff));
 
       // 辅助线
-      const axex2 = new THREE.AxisHelper(20)
-      scene.add(axex2)
+      const axex2 = new THREE.AxisHelper(20);
+      scene.add(axex2);
 
       // 组
-      const group1 = new THREE.Group()
-      group1.add(mesh)
-      group1.add(sphere)
-      scene.add(group1)
+      const group1 = new THREE.Group();
+      group1.add(mesh);
+      group1.add(sphere);
+      scene.add(group1);
 
       // 创建平行光源
       // const directionalLight = new THREE.DirectionalLight(0xffffff, 1); // 平行光，颜色为白色，强度为1
@@ -133,33 +135,72 @@ export default {
       // const ambientLight = new THREE.AmbientLight(0xffffff)
       // scene.add(ambientLight)
 
-      const cameraHelper = new THREE.CameraHelper(pointLight.shadow.camera)
-      scene.add(cameraHelper)
+      const cameraHelper = new THREE.CameraHelper(pointLight.shadow.camera);
+      scene.add(cameraHelper);
     },
     // 机器人
-    robot(){
-      let gltfLoader = new GLTFLoader().setPath('/model/gltf/')
-      gltfLoader.load("RobotExpressive.glb",function(gltf){
-        model = gltf.scene
-        console.log("model",model)
-        for(let k in gltf.children){
-          gltf.children[k].castShadow = true
-        }
-        model.position.set(15,0,-15)
-        scene.add(model)
-      })
+    robot() {
+      let gltfLoader = new GLTFLoader().setPath("/model/gltf/");
+      gltfLoader.load("RobotExpressive.glb", function (gltf) {
+        model = gltf.scene;
+        console.log(gltf.animations);
+        model.traverse((object) => {
+          object.castShadow = true;
+        });
+        model.position.set(15, 0, -15);
+        scene.add(model);
+        mixer = new THREE.AnimationMixer(model);
+        mixer.clipAction(gltf.animations[10]).setDuration(1).play();
+      });
     },
-    animate(){
-      requestAnimationFrame(this.animate)
-      stats.update()
-      renderer.render(scene,camera)
-    },
-    dat(){
-      let controls = new function() {
-        this.rotationSpeed = 0.02
+    animate() {
+      requestAnimationFrame(this.animate);
+      stats.update();
+      var time = clock.getDelta();
+      if (mixer) {
+        mixer.update(time);
       }
-      var gui = new dat.GUI()
-      gui.add(controls,'rotationSpeed',0,0.5)
+      if (progress > 1) {
+        progress = 0;
+        return;
+      }
+      progress += 0.002;
+      // console.log("curve",curve)
+      if (curve) {
+        let point = curve.getPoint(progress);
+        if (point && point.x) {
+          model.position.set(point.x, point.y, point.z);
+        }
+      }
+      renderer.render(scene, camera);
+    },
+    // 曲线
+    curve() {
+      curve = new THREE.CatmullRomCurve3(
+        [
+          new THREE.Vector3(-20, 0, 20),
+          new THREE.Vector3(-20, 0, 0),
+          new THREE.Vector3(0, 0, -20),
+          new THREE.Vector3(20, 0, 0),
+        ],
+        true
+      );
+      const points = curve.getPoints(50);
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+
+      const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
+
+      // Create the final object to add to the scene
+      const curveObject = new THREE.Line(geometry, material);
+      scene.add(curveObject);
+    },
+    // control
+    dat() {
+      let controls = new (function () {
+        this.rotationSpeed = 0.02;
+      })();
+      var gui = new dat.GUI();
+      gui.add(controls, "rotationSpeed", 0, 0.5);
     },
   },
 };

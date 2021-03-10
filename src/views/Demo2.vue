@@ -168,8 +168,10 @@ export default {
       // console.log("curve",curve)
       if (curve) {
         let point = curve.getPoint(progress);
+        let point1 =curve.getPoint(progress+0.001);
         if (point && point.x) {
           model.position.set(point.x, point.y, point.z);
+          model.lookAt(point1.x, point1.y, point1.z)
         }
       }
       renderer.render(scene, camera);

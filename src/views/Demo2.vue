@@ -1,6 +1,7 @@
 <template>
   <div class="hello">
     <div id="container"></div>
+    <!-- <div id="label">立方体</div> -->
   </div>
 </template>
 
@@ -8,12 +9,25 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 const OrbitControls = require("three-orbit-controls")(THREE);
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass.js";
+import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
+import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader.js";
+import DragControls from "drag-controls";
+DragControls.install({ THREE: THREE });
 // 辅助工具
 import * as dat from "dat.gui";
 import * as Stats from "stats.js";
+import { GridHelper, AxesHelper } from "three";
 var stats = new Stats();
-var scene, camera, renderer;
-var model, mixer, clock, curve;
+var scene,
+  camera,
+  renderer,
+  objects = [];
+var model, mixer, clock, curve, orbitControls;
+var composer, outlinePass, renderPass;
+// var projectiveObj,currentProjectiveObjT;
 clock = new THREE.Clock();
 var progress = 0;
 export default {
@@ -23,9 +37,11 @@ export default {
   },
   mounted() {
     this.init();
+    window.addEventListener("click", this.getIntersects, false);
     this.curve();
     this.robot();
     this.animate();
+    this.drag();
     this.dat();
   },
   methods: {
@@ -59,6 +75,7 @@ export default {
       renderer = new THREE.WebGLRenderer({
         antialias: true, // 是否执行抗锯齿
       });
+      // composer = new THREE.EffectComposer(renderer);
       renderer.setPixelRatio(window.devicePixelRatio); // 设置设备像素比率。通常用于HiDPI设备，以防止输出画布模糊。
       renderer.setSize(window.innerWidth, window.innerHeight); // 设置渲染器大小
       renderer.shadowMap.enabled = true;
@@ -66,7 +83,7 @@ export default {
       container.appendChild(renderer.domElement);
 
       // 创建控制器
-      new OrbitControls(camera, renderer.domElement);
+      orbitControls = new OrbitControls(camera, renderer.domElement);
 
       // 创建物体
       const geometry = new THREE.BoxBufferGeometry(4, 4, 4); // 生成几何体
@@ -77,6 +94,8 @@ export default {
       const mesh = new THREE.Mesh(geometry, material); // 生成网格
       mesh.castShadow = true; // 对象是否渲染到阴影贴图中，默认值为false
       // mesh.receiveShadow = false
+      mesh.name = "cube";
+      objects.push(mesh);
       mesh.position.set(0, 2, 0); // 设置物体位置
       scene.add(mesh); // 添加到场景中
 
@@ -87,7 +106,9 @@ export default {
       });
       const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
       sphere.castShadow = true;
+      sphere.name = "sphere";
       sphere.position.set(-10, 2, -8);
+      objects.push(sphere);
       scene.add(sphere);
 
       // 创建平面
@@ -99,6 +120,7 @@ export default {
       const planeMesh = new THREE.Mesh(planeGeometry, planeMaterial); // 生成平面网格
       planeMesh.receiveShadow = true; // 设置平面网格为接受阴影的投影面
       planeMesh.rotation.x = -Math.PI / 2; //绕X轴旋转90度
+      planeMesh.name = "plane";
       scene.add(planeMesh); // 添加到场景中
 
       // 平面
@@ -143,11 +165,14 @@ export default {
       let gltfLoader = new GLTFLoader().setPath("/model/gltf/");
       gltfLoader.load("RobotExpressive.glb", function (gltf) {
         model = gltf.scene;
-        console.log(gltf.animations);
+        // console.log(gltf.animations);
         model.traverse((object) => {
           object.castShadow = true;
         });
+        model.name = "robot";
         model.position.set(15, 0, -15);
+        console.log("gltf", gltf);
+        // objects.push(model)
         scene.add(model);
         mixer = new THREE.AnimationMixer(model);
         mixer.clipAction(gltf.animations[10]).setDuration(1).play();
@@ -160,41 +185,99 @@ export default {
       if (mixer) {
         mixer.update(time);
       }
-      if (progress > 1) {
-        progress = 0;
-        return;
-      }
-      progress += 0.002;
-      // console.log("curve",curve)
-      if (curve) {
-        let point = curve.getPoint(progress);
-        let point1 =curve.getPoint(progress+0.001);
-        if (point && point.x) {
-          model.position.set(point.x, point.y, point.z);
-          model.lookAt(point1.x, point1.y, point1.z)
+      if (model) {
+        if (progress > 1) {
+          progress = 0;
+          return;
+        }
+        progress += 0.002;
+        if (curve) {
+          let point = curve.getPoint(progress);
+          let point1 = curve.getPoint(progress + 0.001);
+          if (point && point.x) {
+            model.position.set(point.x, point.y, point.z);
+            model.lookAt(point1.x, point1.y, point1.z);
+          }
         }
       }
       renderer.render(scene, camera);
+      if (composer) {
+        composer.render();
+      }
     },
     // 曲线
     curve() {
       curve = new THREE.CatmullRomCurve3(
         [
-          new THREE.Vector3(-20, 0, 20),
+          new THREE.Vector3(0, 0, 20),
           new THREE.Vector3(-20, 0, 0),
           new THREE.Vector3(0, 0, -20),
           new THREE.Vector3(20, 0, 0),
         ],
         true
       );
-      const points = curve.getPoints(50);
+      const points = curve.getPoints(500);
       const geometry = new THREE.BufferGeometry().setFromPoints(points);
 
       const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
 
       // Create the final object to add to the scene
       const curveObject = new THREE.Line(geometry, material);
+      curveObject.name = "curve";
       scene.add(curveObject);
+    },
+    // 获取物体
+    getIntersects(event) {
+      event.preventDefault();
+
+      // 声明 raycaster 和 mouse 变量
+      var raycaster = new THREE.Raycaster();
+      var mouse = new THREE.Vector2();
+
+      // 通过鼠标点击位置,计算出 raycaster 所需点的位置,以屏幕为中心点,范围 -1 到 1
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      //通过鼠标点击的位置(二维坐标)和当前相机的矩阵计算出射线位置
+      raycaster.setFromCamera(mouse, camera);
+
+      // 获取与射线相交的对象数组，其中的元素按照距离排序，越近的越靠前
+      let intersects = raycaster.intersectObjects(scene.children, true);
+
+      intersects = intersects.filter((intersect) => {
+        return (
+          !(intersect.object instanceof GridHelper) &&
+          !(intersect.object instanceof AxesHelper) &&
+          intersect.object.name !== "plane" &&
+          intersect.object.name !== "curve"
+        );
+      });
+      //返回选中的对象
+      console.log(intersects);
+      // this.outlineObj(intersects)
+      return intersects;
+    },
+    // 拖动方法
+    drag() {
+      // for(let i = 0; i < scene.children.length; i++){
+      //   if(scene.children[i].isMesh){
+      //     objects.push(scene.children[i])
+      //   }
+      // }
+      console.log("scene.children", scene.children);
+      // objects = [this.traverse(scene.children)]
+      console.log(objects);
+      // 初始化拖拽控件
+      let dragControls = new DragControls(objects, camera, renderer.domElement);
+      dragControls.addEventListener("dragstart", function (event) {
+        orbitControls.enabled = false;
+        console.log("dragstart", event);
+      });
+
+      dragControls.addEventListener("dragend", function (event) {
+        orbitControls.enabled = true;
+        console.log("dragend", event);
+      });
     },
     // control
     dat() {
@@ -203,6 +286,40 @@ export default {
       })();
       var gui = new dat.GUI();
       gui.add(controls, "rotationSpeed", 0, 0.5);
+    },
+    //高亮显示模型（呼吸灯）
+    outlineObj(selectedObjects) {
+      // 创建一个EffectComposer（效果组合器）对象，然后在该对象上添加后期处理通道。
+      composer = new EffectComposer(renderer);
+      // 新建一个场景通道  为了覆盖到原理来的场景上
+      renderPass = new RenderPass(scene, camera);
+      composer.addPass(renderPass);
+      // 物体边缘发光通道
+      outlinePass = new OutlinePass(
+        new THREE.Vector2(window.innerWidth, window.innerHeight),
+        scene,
+        camera,
+        selectedObjects
+      );
+      outlinePass.selectedObjects = selectedObjects;
+      outlinePass.edgeStrength = 10.0; // 边框的亮度
+      outlinePass.edgeGlow = 1; // 光晕[0,1]
+      outlinePass.usePatternTexture = false; // 是否使用父级的材质
+      outlinePass.edgeThickness = 1.0; // 边框宽度
+      outlinePass.downSampleRatio = 1; // 边框弯曲度
+      outlinePass.pulsePeriod = 5; // 呼吸闪烁的速度
+      outlinePass.visibleEdgeColor.set(parseInt(0x00ff00)); // 呼吸显示的颜色
+      outlinePass.hiddenEdgeColor = new THREE.Color(0, 0, 0); // 呼吸消失的颜色
+      outlinePass.clear = true;
+      composer.addPass(outlinePass);
+      // 自定义的着色器通道 作为参数
+      var effectFXAA = new ShaderPass(FXAAShader);
+      effectFXAA.uniforms.resolution.value.set(
+        1 / window.innerWidth,
+        1 / window.innerHeight
+      );
+      effectFXAA.renderToScreen = true;
+      composer.addPass(effectFXAA);
     },
   },
 };

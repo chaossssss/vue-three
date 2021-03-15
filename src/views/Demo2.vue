@@ -6,6 +6,7 @@
 </template>
 
 <script>
+/* eslint-disable */
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 const OrbitControls = require("three-orbit-controls")(THREE);
@@ -27,6 +28,7 @@ var scene,
   objects = [];
 var model, mixer, clock, curve, orbitControls;
 var composer, outlinePass, renderPass;
+var duckGroup,outerMesh,duckModel,duckSize
 // var projectiveObj,currentProjectiveObjT;
 clock = new THREE.Clock();
 var progress = 0;
@@ -40,6 +42,7 @@ export default {
     window.addEventListener("click", this.getIntersects, false);
     this.curve();
     this.robot();
+    this.duck()
     this.animate();
     this.drag();
     this.dat();
@@ -178,6 +181,33 @@ export default {
         mixer.clipAction(gltf.animations[10]).setDuration(1).play();
       });
     },
+    duck(){
+      let gltfLoader = new GLTFLoader().setPath("/model/Duck/glTF/")
+      gltfLoader.load("Duck.gltf",function(gltf){
+        console.log(gltf)
+        duckModel = gltf.scene
+        duckModel.position.set(10,0,10)
+        duckModel.name = "duck"
+        duckModel.traverse((object) => {
+          object.castShadow = true;
+        });
+        let duckBox = new THREE.Box3().setFromObject(duckModel)
+        duckSize = duckBox.size()
+        let duckGeometry = new THREE.BoxGeometry(duckSize.x,duckSize.y,duckSize.z)
+        let duckMaterial = new THREE.MeshBasicMaterial({
+          color: 0xfff,
+          transparent: true,
+          opacity: 0
+        })
+        outerMesh = new THREE.Mesh(duckGeometry,duckMaterial)
+        outerMesh.name = "duckOuter"
+        outerMesh.position.set(10,duckSize.y/2,10)
+        objects.push(outerMesh)
+        scene.add(outerMesh)
+        console.log("duckSize",duckSize)
+        scene.add(duckModel)
+      })
+    },
     animate() {
       requestAnimationFrame(this.animate);
       stats.update();
@@ -259,24 +289,30 @@ export default {
     },
     // 拖动方法
     drag() {
-      // for(let i = 0; i < scene.children.length; i++){
-      //   if(scene.children[i].isMesh){
-      //     objects.push(scene.children[i])
-      //   }
-      // }
       console.log("scene.children", scene.children);
-      // objects = [this.traverse(scene.children)]
       console.log(objects);
       // 初始化拖拽控件
       let dragControls = new DragControls(objects, camera, renderer.domElement);
       dragControls.addEventListener("dragstart", function (event) {
         orbitControls.enabled = false;
         console.log("dragstart", event);
-      });
 
+      });
+      dragControls.addEventListener("drag",function(event){
+        if(event.object.name == 'duckOuter'){
+          duckModel.position.x = event.object.position.x
+          duckModel.position.y = event.object.position.y - duckSize.y/2
+          duckModel.position.z = event.object.position.z
+        }
+      })
       dragControls.addEventListener("dragend", function (event) {
         orbitControls.enabled = true;
         console.log("dragend", event);
+        if(event.object.name == 'duckOuter'){
+          duckModel.position.x = event.object.position.x
+          duckModel.position.y = event.object.position.y - duckSize.y/2
+          duckModel.position.z = event.object.position.z
+        }
       });
     },
     // control
@@ -323,6 +359,7 @@ export default {
     },
   },
 };
+/* eslint-disable */
 </script>
 <style scoped lang="less">
 </style>

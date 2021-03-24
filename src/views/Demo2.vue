@@ -30,6 +30,8 @@ var model, mixer, clock, curve, orbitControls;
 var composer, outlinePass, renderPass;
 var duckGroup,outerMesh,duckModel,duckSize
 // var projectiveObj,currentProjectiveObjT;
+// var width = window.innerWidth; //全屏状态对应窗口宽度
+// var height = window.innerHeight; //全屏状态对应窗口高度
 clock = new THREE.Clock();
 var progress = 0;
 export default {
@@ -83,7 +85,14 @@ export default {
       renderer.setSize(window.innerWidth, window.innerHeight); // 设置渲染器大小
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      composer = new EffectComposer(renderer);
+      composer.addPass(new RenderPass(scene, camera));
       container.appendChild(renderer.domElement);
+
+      // var FXAAShaderPass = new ShaderPass(FXAAShader);
+      // FXAAShaderPass.uniforms['resolution'].value.set(1 / width, 1 / height);
+      // FXAAShaderPass.renderToScreen = true;
+      // composer.addPass(FXAAShaderPass);
 
       // 创建控制器
       orbitControls = new OrbitControls(camera, renderer.domElement);
@@ -174,7 +183,7 @@ export default {
         });
         model.name = "robot";
         model.position.set(15, 0, -15);
-        console.log("gltf", gltf);
+        // console.log("gltf", gltf);
         // objects.push(model)
         scene.add(model);
         mixer = new THREE.AnimationMixer(model);
@@ -204,7 +213,7 @@ export default {
         outerMesh.position.set(10,duckSize.y/2,10)
         objects.push(outerMesh)
         scene.add(outerMesh)
-        console.log("duckSize",duckSize)
+        // console.log("duckSize",duckSize)
         scene.add(duckModel)
       })
     },
@@ -230,7 +239,7 @@ export default {
           }
         }
       }
-      renderer.render(scene, camera);
+      // renderer.render(scene, camera);
       if (composer) {
         composer.render();
       }
@@ -284,7 +293,12 @@ export default {
       });
       //返回选中的对象
       console.log(intersects);
-      // this.outlineObj(intersects)
+      // let sphereObj = intersects.filter(item=>{
+      //   return item.object.name == 'sphere'
+      // })
+      // if(sphereObj){
+      //   this.outlineObj(sphereObj[0].object)
+      // }
       return intersects;
     },
     // 拖动方法

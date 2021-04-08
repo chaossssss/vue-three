@@ -1,43 +1,65 @@
 <template>
-  <div id="container">
-
-  </div>
+  <div id="container"></div>
 </template>
 
 <script>
 /* eslint-disable */
 
-import * as THREE from 'three'
-import JIAXING from '../utils/JIAXING.json'
-var scene,camera,renderer
+import * as THREE from "three";
+import * as d3 from "d3-geo";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass.js";
+import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
+import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader.js";
+import JIAXING from "../utils/JIAXING.json";
+var scene, camera, renderer, composer, renderPass;
 export default {
-  name: 'Shape',
-  mounted(){
-    this.init()
+  name: "Shape",
+  data() {
+    return {
+      projection: "",
+      group: "",
+      map: ""
+    };
+  },
+  mounted() {
+    this.init();
   },
   methods: {
-    init(){
-      this.setScene()
-      this.setCamera()
-      this.setRenderer()
+    init() {
+      this.setScene();
+      this.setCamera();
+      this.setRenderer();
+
+      this.setComposer();
+      this.setRendererPass()
+
       // this.addCube()
-      this.addPlane()
-      this.addShape()
-      this.setLight()
-      this.render()
+      this.addPlane();
+      // this.addShape()
+      // this.addMap();
+      this.initMap()
+      this.setLight();
+      this.render();
     },
-    setScene(){
-      scene = new THREE.Scene()
+    setScene() {
+      scene = new THREE.Scene();
     },
-    setCamera(){
-      camera = new THREE.PerspectiveCamera(10, window.innerWidth / window.innerHeight, 1, 10000);
-      camera.position.set(100,100,40);
+    setCamera() {
+      camera = new THREE.PerspectiveCamera(
+        10,
+        window.innerWidth / window.innerHeight,
+        1,
+        10000
+      );
+      camera.position.set(100, 100, 40);
       camera.lookAt(0, 0, 0);
     },
-    setLight(){
+    setLight() {
       // 环境光
-      const light = new THREE.AmbientLight( 0x404040 );
-      scene.add( light );
+      const light = new THREE.AmbientLight(0x404040);
+      scene.add(light);
 
       // 点光源
       const pointLight = new THREE.PointLight(0xffffff, 1, 10000);
@@ -47,48 +69,144 @@ export default {
       scene.add(pointLight);
       scene.add(pointLightHelper);
     },
-    setRenderer(){
-      let container = document.getElementById("container")
+    setRenderer() {
+      let container = document.getElementById("container");
       renderer = new THREE.WebGLRenderer();
       renderer.setSize(window.innerWidth, window.innerHeight);
       container.appendChild(renderer.domElement);
     },
-    addPlane(){
-      const geometry = new THREE.PlaneGeometry( 40, 40 );
-      const material = new THREE.MeshBasicMaterial( {color: 0xcccccc, side: THREE.DoubleSide} );
-      const plane = new THREE.Mesh( geometry, material );
+    setComposer(){
+      composer = new EffectComposer(renderer)
+    },
+    setRendererPass(){
+      renderPass = new RenderPass(scene, camera)
+      composer.addPass(renderPass)
+    },
+    addPlane() {
+      const geometry = new THREE.PlaneGeometry(40, 40);
+      const material = new THREE.MeshBasicMaterial({
+        color: 0xcccccc,
+        side: THREE.DoubleSide,
+      });
+      const plane = new THREE.Mesh(geometry, material);
       plane.receiveShadow = true; // 设置平面网格为接受阴影的投影面
       plane.rotation.x = -Math.PI / 2; //绕X轴旋转90度
-      scene.add( plane );
+      scene.add(plane);
     },
-    addCube(){
+    addCube() {
       const geometry = new THREE.BoxGeometry();
-			const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-			const cube = new THREE.Mesh( geometry, material );
-			scene.add( cube );
+      const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+      const cube = new THREE.Mesh(geometry, material);
+      scene.add(cube);
     },
-    addShape(){
-      const x = 0, y = 0;
+    addShape() {
+      const x = 0,
+        y = 0;
       const heartShape = new THREE.Shape();
-      heartShape.moveTo( x + 5, y + 5 );
-      heartShape.bezierCurveTo( x + 5, y + 5, x + 4, y, x, y );
-      heartShape.bezierCurveTo( x - 6, y, x - 6, y + 7,x - 6, y + 7 );
-      heartShape.bezierCurveTo( x - 6, y + 11, x - 3, y + 15.4, x + 5, y + 19 );
-      heartShape.bezierCurveTo( x + 12, y + 15.4, x + 16, y + 11, x + 16, y + 7 );
-      heartShape.bezierCurveTo( x + 16, y + 7, x + 16, y, x + 10, y );
-      heartShape.bezierCurveTo( x + 7, y, x + 5, y + 5, x + 5, y + 5 );
-      const geometry = new THREE.ShapeGeometry( heartShape );
-      const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-      const mesh = new THREE.Mesh( geometry, material ) ;
+      heartShape.moveTo(x + 5, y + 5);
+      heartShape.bezierCurveTo(x + 5, y + 5, x + 4, y, x, y);
+      heartShape.bezierCurveTo(x - 6, y, x - 6, y + 7, x - 6, y + 7);
+      heartShape.bezierCurveTo(x - 6, y + 11, x - 3, y + 15.4, x + 5, y + 19);
+      heartShape.bezierCurveTo(x + 12, y + 15.4, x + 16, y + 11, x + 16, y + 7);
+      heartShape.bezierCurveTo(x + 16, y + 7, x + 16, y, x + 10, y);
+      heartShape.bezierCurveTo(x + 7, y, x + 5, y + 5, x + 5, y + 5);
+      const extrudeSettings = {
+        steps: 2,
+        depth: 4,
+        bevelEnabled: true,
+        bevelThickness: 1,
+        bevelSize: 1,
+        bevelOffset: 0,
+        bevelSegments: 1,
+      };
+      const geometry = new THREE.ExtrudeGeometry(heartShape, extrudeSettings);
+      const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+      const mesh = new THREE.Mesh(geometry, material);
       mesh.rotation.x = -Math.PI / 2; //绕X轴旋转90度
-      scene.add( mesh );
+      scene.add(mesh);
     },
-    render(){
-      requestAnimationFrame(this.render)
-      renderer.render(scene, camera)
-    }
-  }
-}
+
+    initMap() {
+      // 建一个空对象存放对象
+      this.map = new THREE.Object3D();
+
+      let _this = this;
+
+      // 墨卡托投影转换
+      const projection = d3
+        .geoMercator()
+        .center([120.750865, 30.762653])
+        .scale(1000)
+        .translate([0, 0]);
+
+      JIAXING.features.forEach((elem) => {
+        // 定一个省份3D对象
+        const province = new THREE.Object3D();
+        // 每个的 坐标 数组
+        const coordinates = elem.geometry.coordinates;
+        // 循环坐标数组
+        coordinates.forEach((multiPolygon) => {
+          multiPolygon.forEach((polygon) => {
+            const shape = new THREE.Shape();
+            const lineMaterial = new THREE.LineBasicMaterial({
+              color: "white",
+            });
+            const lineGeometry = new THREE.Geometry();
+
+            for (let i = 0; i < polygon.length; i++) {
+              const [x, y] = projection(polygon[i]);
+              if (i === 0) {
+                shape.moveTo(x, -y);
+              }
+              shape.lineTo(x, -y);
+              lineGeometry.vertices.push(new THREE.Vector3(x, -y, 4.01));
+            }
+
+            const extrudeSettings = {
+              depth: 4,
+              bevelEnabled: false,
+            };
+
+            const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+            const material = new THREE.MeshBasicMaterial({
+              color: "#02A1E2",
+              transparent: true,
+              opacity: 0.6,
+            });
+            const material1 = new THREE.MeshBasicMaterial({
+              color: "#3480C4",
+              transparent: true,
+              opacity: 0.5,
+            });
+            const mesh = new THREE.Mesh(geometry, [material, material1]);
+            const line = new THREE.Line(lineGeometry, lineMaterial);
+            province.add(mesh);
+            province.add(line);
+          });
+        });
+
+        // 将geo的属性放到省份模型中
+        province.properties = elem.properties;
+        if (elem.properties.contorid) {
+          const [x, y] = projection(elem.properties.contorid);
+          province.properties._centroid = [x, y];
+        }
+        province.rotation.x = -Math.PI / 2; //绕X轴旋转90度
+        _this.map.add(province);
+      });
+
+      scene.add(this.map);
+    },
+
+    render() {
+      let clock = new THREE.Clock()
+      let delta = clock.getDelta()
+      requestAnimationFrame(this.render);
+      composer.render(delta);//使用组合器来渲染，而不再用webGLRenderer
+      // renderer.render(scene, camera);
+    },
+  },
+};
 
 /* eslint-disable */
 </script>

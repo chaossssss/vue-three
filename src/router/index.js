@@ -13,37 +13,42 @@ const routes = [
   {
     path: '/Three',
     name: 'Three',
-    component: () => import(/* webpackChunkName: "about" */ '../views/Three.vue')
+    component: () => import('../views/Three.vue')
   },
   {
     path: '/Model',
     name: 'Model',
-    component: () => import(/* webpackChunkName: "about" */ '../views/Model.vue')
+    component: () => import('../views/Model.vue')
   },
   {
     path: '/MyModel',
     name: 'MyModel',
-    component: () => import(/* webpackChunkName: "about" */ '../views/MyModel.vue')
+    component: () => import('../views/MyModel.vue')
   },
   {
     path: '/Demo1',
     name: 'Demo1',
-    component: () => import(/* webpackChunkName: "about" */ '../views/Demo1.vue')
+    component: () => import('../views/Demo1.vue')
   },
   {
     path: '/Map',
     name: 'Map',
-    component: () => import(/* webpackChunkName: "about" */ '../views/Map.vue')
+    component: () => import('../views/Map.vue')
+  },
+  {
+    path: '/Shape',
+    name: 'Shape',
+    component: () => import('../views/Shape.vue')
   },
   {
     path: '/Demo2',
     name: 'Demo2',
-    component: () => import(/* webpackChunkName: "about" */ '../views/Demo2.vue')
+    component: () => import('../views/Demo2.vue')
   },
   {
     path: '/Async',
     name: 'Async',
-    component: () => import(/* webpackChunkName: "about" */ '../views/Async.vue')
+    component: () => import('../views/Async.vue')
   },
   {
     path: '/about',

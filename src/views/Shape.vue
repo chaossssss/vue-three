@@ -10,8 +10,10 @@ import * as d3 from "d3-geo";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass.js";
+import { BloomPass } from "three/examples/jsm/postprocessing/BloomPass.js";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader.js";
+import { CopyShader } from "three/examples/jsm/shaders/CopyShader.js";
 import JIAXING from "../utils/JIAXING.json";
 var scene, camera, renderer, composer, renderPass;
 export default {
@@ -80,7 +82,12 @@ export default {
     },
     setRendererPass(){
       renderPass = new RenderPass(scene, camera)
+      // let effectCopy = new ShaderPass(CopyShader);//CopyShader是为了能将结果输出，普通的通道一般都是不能输出的，要靠CopyShader进行输出
+      // effectCopy.renderToScreen = true;//设置这个参数的目的是马上将当前的内容输出
+      // let bloomPass = new BloomPass(3, 15, 1.0, 256);
       composer.addPass(renderPass)
+      // composer.addPass(bloomPass)
+      // composer.addPass(effectCopy)
     },
     addPlane() {
       const geometry = new THREE.PlaneGeometry(40, 40);
@@ -178,7 +185,10 @@ export default {
               transparent: true,
               opacity: 0.5,
             });
-            const mesh = new THREE.Mesh(geometry, [material, material1]);
+
+            let shaderMaterial = this.shaderMaterial()
+
+            const mesh = new THREE.Mesh(geometry, [material, shaderMaterial]);
             const line = new THREE.Line(lineGeometry, lineMaterial);
             province.add(mesh);
             province.add(line);
@@ -197,7 +207,10 @@ export default {
 
       scene.add(this.map);
     },
+    // shader
+    shaderMaterial(){
 
+    },
     render() {
       let clock = new THREE.Clock()
       let delta = clock.getDelta()

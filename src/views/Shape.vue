@@ -1,5 +1,7 @@
 <template>
-  <div id="container"></div>
+  <div id="container">
+    <div id="provinceInfo" ref="provinceInfo">444444444444444</div>
+  </div>
 </template>
 
 <script>
@@ -22,7 +24,11 @@ export default {
     return {
       projection: "",
       group: "",
-      map: ""
+      map: "",
+      raycaster: "",
+      mouse: "",
+      eventOffset: {},
+      activeInstersect: [],
     };
   },
   mounted() {
@@ -35,14 +41,15 @@ export default {
       this.setRenderer();
 
       this.setComposer();
-      this.setRendererPass()
+      this.setRendererPass();
 
       // this.addCube()
       this.addPlane();
       // this.addShape()
       // this.addMap();
-      this.initMap()
+      this.initMap();
       this.setLight();
+      this.setRaycaster()
       this.render();
     },
     setScene() {
@@ -77,15 +84,15 @@ export default {
       renderer.setSize(window.innerWidth, window.innerHeight);
       container.appendChild(renderer.domElement);
     },
-    setComposer(){
-      composer = new EffectComposer(renderer)
+    setComposer() {
+      composer = new EffectComposer(renderer);
     },
-    setRendererPass(){
-      renderPass = new RenderPass(scene, camera)
+    setRendererPass() {
+      renderPass = new RenderPass(scene, camera);
       // let effectCopy = new ShaderPass(CopyShader);//CopyShader是为了能将结果输出，普通的通道一般都是不能输出的，要靠CopyShader进行输出
       // effectCopy.renderToScreen = true;//设置这个参数的目的是马上将当前的内容输出
       // let bloomPass = new BloomPass(3, 15, 1.0, 256);
-      composer.addPass(renderPass)
+      composer.addPass(renderPass);
       // composer.addPass(bloomPass)
       // composer.addPass(effectCopy)
     },
@@ -186,9 +193,11 @@ export default {
               opacity: 0.5,
             });
 
-            let shaderMaterial = this.shaderMaterial()
+            // let shaderMaterial = this.shaderMaterial();
+            // const mesh = new THREE.Mesh(geometry, [material, shaderMaterial]);
 
-            const mesh = new THREE.Mesh(geometry, [material, shaderMaterial]);
+            const mesh = new THREE.Mesh(geometry, [material, material1]);
+
             const line = new THREE.Line(lineGeometry, lineMaterial);
             province.add(mesh);
             province.add(line);
@@ -208,14 +217,116 @@ export default {
       scene.add(this.map);
     },
     // shader
-    shaderMaterial(){
+    shaderMaterial() {
+      let vertexShader = `
+        varying vec3 vNormal;
+        void main() {
+          vNormal = normal;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4( position.x, position.y * 1.4, position.z, 1.0 );
+        }
+      `;
+      let fragmentShader = `
+        varying vec3 vNormal;
+        void main() {
+          float pr = (vNormal.x + 1.0) / 2.0;
+          float pg = (vNormal.y + 1.0) / 2.0;
+          float pb = (vNormal.z + 1.0) / 2.0;
+          gl_FragColor=vec4(pr, pg, pb, 1.0);
+        }
+      `;
+      return new THREE.ShaderMaterial({
+        uniforms: {
+          time: {
+            value: 1.0,
+          },
+        },
+        vertexShader,
+        fragmentShader,
+        transparent: true,
+      });
+    },
+
+    setRaycaster() {
+      this.raycaster = new THREE.Raycaster();
+      this.mouse = new THREE.Vector2();
+      this.eventOffset = {};
+      var _this = this;
+      function onMouseMove(event) {
+        // calculate mouse position in normalized device coordinates
+        // (-1 to +1) for both components
+
+        _this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        _this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        _this.eventOffset.x = event.clientX;
+        _this.eventOffset.y = event.clientY;
+        _this.$refs.provinceInfo.style.left = _this.eventOffset.x + 2 + "px"; // 动态设置提示框的位置
+        _this.$refs.provinceInfo.style.top = _this.eventOffset.y + 2 + "px"; // 动态设置提示框的位置
+        // console.log(_this.provinceInfo)
+      }
+
+      window.addEventListener("mousemove", onMouseMove, false);
+    },
+
+    createProvinceInfo() {
+      // 显示省份的信息
+      let _this = this
+      _this.$nextTick(()=>{
+        if (
+          _this.activeInstersect.length !== 0 &&
+          _this.activeInstersect[0].object.parent.properties.name
+        ) {
+          var properties = _this.activeInstersect[0].object.parent.properties;
+  
+          _this.$refs.provinceInfo.textContent = properties.name;
+  
+          _this.$refs.provinceInfo.style.visibility = "visible";
+        } else {
+          _this.$refs.provinceInfo.style.visibility = "hidden";
+        }
+        // console.log(_this.provinceInfo)
+      })
 
     },
+
     render() {
-      let clock = new THREE.Clock()
-      let delta = clock.getDelta()
+      let clock = new THREE.Clock();
+      let delta = clock.getDelta();
       requestAnimationFrame(this.render);
-      composer.render(delta);//使用组合器来渲染，而不再用webGLRenderer
+
+      this.raycaster.setFromCamera(this.mouse, camera);
+      if (this.map) {
+        // calculate objects intersecting the picking ray
+        var intersects = this.raycaster.intersectObjects(
+          this.map.children,
+          true
+        );
+        if (this.activeInstersect && this.activeInstersect.length > 0) {
+          this.activeInstersect.forEach((element) => {
+            element.object.material[0].color.set("#02A1E2");
+            element.object.material[1].color.set("#3480C4");
+          });
+        }
+
+        this.activeInstersect = [];
+
+        for (var i = 0; i < intersects.length; i++) {
+          if (
+            intersects[i].object.material &&
+            intersects[i].object.material.length === 2
+          ) {
+            this.activeInstersect.push(intersects[i]);
+            intersects[i].object.material[0].color.set(0xff0000);
+            intersects[i].object.material[1].color.set(0xff0000);
+            intersects[i].object.geometry.parameters.options.depth =
+              Math.random() * 10;
+            intersects[i].object.geometry.needsUpdate = true;
+            break; // 只取第一个
+          }
+        }
+        this.createProvinceInfo();
+      }
+
+      composer.render(delta); //使用组合器来渲染，而不再用webGLRenderer
       // renderer.render(scene, camera);
     },
   },
@@ -225,7 +336,15 @@ export default {
 </script>
 <style scoped lang="less">
 #container {
+  position: relative;
   width: 100vw;
   height: 100vh;
+}
+#provinceInfo {
+  position: absolute;
+  z-index: 2;
+  background: white;
+  padding: 10px;
+  // visibility: hidden;
 }
 </style>

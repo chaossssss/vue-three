@@ -1,6 +1,6 @@
 <template>
   <div id="container">
-    <div id="provinceInfo" ref="provinceInfo">444444444444444</div>
+    <div id="provinceInfo" ref="provinceInfo"></div>
   </div>
 </template>
 

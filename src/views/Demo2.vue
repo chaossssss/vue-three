@@ -45,6 +45,7 @@ export default {
     this.curve();
     this.robot();
     this.duck()
+    this.duck2()
     this.animate();
     this.drag();
     this.dat();
@@ -216,6 +217,58 @@ export default {
         // console.log("duckSize",duckSize)
         scene.add(duckModel)
       })
+    },
+    duck2(){
+      let _this = this
+      let gltfLoader = new GLTFLoader().setPath("/model/Duck/glTF/")
+      gltfLoader.load("Duck.gltf",function(gltf){
+        let material = new THREE.PointsMaterial({
+          color: 0xffffff,
+          size: 0.6,
+          opacity: 0.8,
+          transparent: true,
+          blending: THREE.AdditiveBlending,
+          depthTest: false,
+          map: _this.generateSprite()
+        })
+
+        // gltf.scene.traverse(function(child){
+        //   if(child instanceof THREE.Mesh){
+        //     child.material = material
+        //   }
+        // })
+        // gltf.scene.position.set(12,0,12)
+        // scene.add(gltf.scene)
+
+
+        let mesh = new THREE.Points(gltf.scene,material)
+        mesh.scale.set(1,1,1)
+        mesh.position.set(12,0,12)
+        // mesh.center()
+        // gltf.scene.center()
+        // gltf.scene.position.set(12,0,12)
+        scene.add(mesh)
+
+      })
+    },
+    generateSprite(){
+      let canvas = document.createElement('canvas')
+      canvas.width = 16
+      canvas.height = 16
+
+      let context = canvas.getContext('2d')
+      let gradient = context.createRadialGradient((canvas.width / 2).toFixed(2), (canvas.height / 2).toFixed(2), 0, (canvas.width / 2).toFixed(2), (canvas.height / 2).toFixed(2), (canvas.width / 2).toFixed(2))
+      gradient.addColorStop(0,'rgba(255,255,255,1)')
+      gradient.addColorStop(0.2,'rgba(0,255,255,1)')
+      gradient.addColorStop(0.4,'rgba(0,0,64,1)')
+      gradient.addColorStop(1,'rgba(0,0,0,1)')
+
+      context.fillStyle = gradient
+      context.fillRect(0,0,canvas.width,canvas.height)
+      
+      let texture = new THREE.Texture(canvas)
+      texture.needsUpdate = true
+      return texture
     },
     animate() {
       requestAnimationFrame(this.animate);

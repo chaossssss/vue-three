@@ -41,6 +41,11 @@ const routes = [
     component: () => import('../views/Shape.vue')
   },
   {
+    path: '/Texture',
+    name: 'Texture',
+    component: () => import('../views/Texture.vue')
+  },
+  {
     path: '/Demo2',
     name: 'Demo2',
     component: () => import('../views/Demo2.vue')

@@ -13,11 +13,12 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass.js";
 import { BloomPass } from "three/examples/jsm/postprocessing/BloomPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader.js";
 import { CopyShader } from "three/examples/jsm/shaders/CopyShader.js";
 import JIAXING from "../utils/JIAXING.json";
-var scene, camera, renderer, composer, renderPass;
+var scene, camera, renderer, composer, renderPass,bloomPass;
 export default {
   name: "Shape",
   data() {
@@ -39,6 +40,8 @@ export default {
       this.setScene();
       this.setCamera();
       this.setRenderer();
+
+      this.setUnrealBloom()
 
       this.setComposer();
       this.setRendererPass();
@@ -78,6 +81,18 @@ export default {
       scene.add(pointLight);
       scene.add(pointLightHelper);
     },
+    setUnrealBloom() {
+      const params = {
+				exposure: .1,
+				bloomStrength: 0.2,
+				bloomThreshold: 0,
+				bloomRadius: 0
+			};
+      bloomPass = new UnrealBloomPass( new THREE.Vector2( window.innerWidth, window.innerHeight ), 1.5, 0.4, 0.85 );
+      bloomPass.threshold = params.bloomThreshold;
+      bloomPass.strength = params.bloomStrength;
+      bloomPass.radius = params.bloomRadius;
+    },
     setRenderer() {
       let container = document.getElementById("container");
       renderer = new THREE.WebGLRenderer();
@@ -86,6 +101,7 @@ export default {
     },
     setComposer() {
       composer = new EffectComposer(renderer);
+      // composer.addPass( bloomPass );
     },
     setRendererPass() {
       renderPass = new RenderPass(scene, camera);
@@ -93,7 +109,7 @@ export default {
       // effectCopy.renderToScreen = true;//设置这个参数的目的是马上将当前的内容输出
       // let bloomPass = new BloomPass(3, 15, 1.0, 256);
       composer.addPass(renderPass);
-      // composer.addPass(bloomPass)
+      composer.addPass(bloomPass)
       // composer.addPass(effectCopy)
     },
     addPlane() {

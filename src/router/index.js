@@ -26,6 +26,11 @@ const routes = [
     component: () => import('../views/MyModel.vue')
   },
   {
+    path: '/UnBloom',
+    name: 'UnBloom',
+    component: () => import('../views/UnBloom.vue')
+  },
+  {
     path: '/Demo1',
     name: 'Demo1',
     component: () => import('../views/Demo1.vue')

@@ -136,7 +136,8 @@ export default {
         .scale(1000)
         .translate([0, 0]);
       const [x, y] = projection([120.680757,30.510659])
-      console.log(cube.size())
+      let cubeModel = new THREE.Box3().setFromObject(cube)
+      console.log(cubeModel.size())
       cube.position.set(x,11.51,y)
     },
     addShape() {

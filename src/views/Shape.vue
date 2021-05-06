@@ -18,6 +18,7 @@ import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader.js";
 import { CopyShader } from "three/examples/jsm/shaders/CopyShader.js";
 import JIAXING from "../utils/JIAXING.json";
+const OrbitControls = require("three-orbit-controls")(THREE);
 var scene, camera, renderer, composer, renderPass,bloomPass;
 export default {
   name: "Shape",
@@ -40,13 +41,13 @@ export default {
       this.setScene();
       this.setCamera();
       this.setRenderer();
-
+      this.addAxesHelper()
       this.setUnrealBloom()
 
       this.setComposer();
       this.setRendererPass();
 
-      // this.addCube()
+      this.addCube()
       this.addPlane();
       // this.addShape()
       // this.addMap();
@@ -80,6 +81,7 @@ export default {
       const pointLightHelper = new THREE.PointLightHelper(pointLight, 8);
       scene.add(pointLight);
       scene.add(pointLightHelper);
+      const controls = new OrbitControls(camera, renderer.domElement);
     },
     setUnrealBloom() {
       const params = {
@@ -124,10 +126,18 @@ export default {
       scene.add(plane);
     },
     addCube() {
-      const geometry = new THREE.BoxGeometry();
+      const geometry = new THREE.BoxGeometry(1,15,1);
       const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
       const cube = new THREE.Mesh(geometry, material);
       scene.add(cube);
+      const projection = d3
+        .geoMercator()
+        .center([120.750865, 30.762653])
+        .scale(1000)
+        .translate([0, 0]);
+      const [x, y] = projection([120.680757,30.510659])
+      console.log(cube.size())
+      cube.position.set(x,11.51,y)
     },
     addShape() {
       const x = 0,
@@ -155,7 +165,10 @@ export default {
       mesh.rotation.x = -Math.PI / 2; //绕X轴旋转90度
       scene.add(mesh);
     },
-
+    addAxesHelper(){
+      const axesHelper = new THREE.AxesHelper( 15 );
+      scene.add( axesHelper );
+    },
     initMap() {
       // 建一个空对象存放对象
       this.map = new THREE.Object3D();

@@ -102,6 +102,7 @@ export default {
       bloomComposer.render();
     },
     render() {
+      // 关键代码
       renderer.autoClear = false
       // 渲染器清除颜色、深度或模板缓存. 此方法将颜色缓存初始化为当前颜色
       renderer.clear();
@@ -113,15 +114,6 @@ export default {
       camera.layers.set(0);
       renderer.render(scene, camera);
       requestAnimationFrame(this.render);
-    },
-    init2(){
-      scene = new THREE.Scene()
-      camera = new THREE.PerspectiveCamera(70,window.innerWidth / window.innerHeight, 1 , 10000)
-      camera.position.set(50,50,50)
-      camera.position.y = -50
-      renderer = new THREE.WebGLRenderer({
-        antialias: true
-      })
     },
   },
 };

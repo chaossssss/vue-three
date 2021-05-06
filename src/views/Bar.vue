@@ -1,5 +1,7 @@
 <template>
-  <div id="container"></div>
+  <div class="con">
+    <div id="container"></div>
+  </div>
 </template>
 
 <script>
@@ -50,8 +52,11 @@ let stats;
 export default {
   name: "Bar",
   mounted(){
-    this.init()
-    this.update()
+    let _this = this
+    this.$nextTick(()=>{
+      _this.init()
+      _this.update()
+    })
   },
   methods: {
     init() {
@@ -59,7 +64,6 @@ export default {
       // scene
       scene = new THREE.Scene();
       container = document.getElementById("container");
-
       // camera
       let frustumSize = 150;
       let aspect = container.clientWidth / container.clientHeight;
@@ -303,9 +307,14 @@ export default {
 /* eslint-disable */
 </script>
 <style scoped lang="less">
+.con {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+}
 #container {
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
 }
 .three-label {
   position: absolute;

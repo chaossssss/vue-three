@@ -1,5 +1,5 @@
 <template>
-  <div class="con">
+  <div class="con" id="con">
     <div id="container"></div>
   </div>
 </template>
@@ -316,7 +316,7 @@ export default {
   width: 100vw;
   height: 100vh;
 }
-.three-label {
+/deep/ .three-label {
   position: absolute;
   color: #ffffff;
   opacity: 0;
@@ -325,7 +325,7 @@ export default {
     0 0 40px rgb(255, 0, 222), 0 0 70px rgb(255, 0, 222),
     0 0 80px rgb(255, 0, 222), 0 0 100px rgb(255, 0, 222);
 }
-.three-label.active {
+/deep/ .three-label.active {
   opacity: 1;
 }
 </style>

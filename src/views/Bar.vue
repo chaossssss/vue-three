@@ -8,7 +8,9 @@
 /* eslint-disable */
 import * as THREE from "three";
 import * as Stats from "stats.js";
-import * as TWEEN from "@tweenjs/tween.js";
+// import {TWEEN} from '../utils/tween.js';
+const TWEEN = require('@tweenjs/tween.js')
+// import * as TWEEN from "@tweenjs/tween.js";
 // 粒子化立方体数据
 let data = [
   {
@@ -107,6 +109,7 @@ export default {
     update() {
       requestAnimationFrame(this.update);
       TWEEN.update(undefined, true);
+      // TWEEN.update();
       renderer.render(scene, camera);
       stats.update();
     },
@@ -207,10 +210,12 @@ export default {
     },
     // 初始化立方体中间粒子
     initParticles(cube, width, height, material) {
+      let _this = this
       let particles = [];
       let flag = true;
       let timer = setInterval(() => {
         // 不断生成粒子
+        // 注释
         if (!flag) clearInterval(timer);
         // 每次发射粒子数量
         for (let i = 0; i < Math.floor(height / 4); i++) {
@@ -242,9 +247,9 @@ export default {
                 0,
                 THREE.Math.randFloat(-width, width)
               );
+              scene.remove(particle)
             })
             .start();
-          tween.chain(tween);
         }
       }, 100);
     },

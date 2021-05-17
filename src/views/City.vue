@@ -16,6 +16,7 @@ import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader.js";
 import { CopyShader } from "three/examples/jsm/shaders/CopyShader.js";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader";
+// import { TextureLoader } from "three/examples/jsm/loaders/TextureLoader";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 export default {
@@ -36,6 +37,7 @@ export default {
   methods: {
     init(){
       this.setScene()
+      this.addLightBar()
       // this.loadObj()
       this.loadGltf()
       this.animate()
@@ -48,7 +50,7 @@ export default {
         y: 0,
         z: 0,
       })
-      this.camera.position.set(80,80,80);
+      this.camera.position.set(10,10,10);
       this.scene = new THREE.Scene()
       this.scene.background = new THREE.Color(0xcccccc);
       this.scene.fog = new THREE.Fog(0xeeeeee,0.01,10000)
@@ -59,25 +61,44 @@ export default {
       container.appendChild(this.renderer.domElement)
       // 点光源
       const pointLight = new THREE.PointLight(0xffffff, 1, 10000);
-      pointLight.position.set(10, 10, 0);
+      pointLight.position.set(6, 6, 0);
       pointLight.castShadow = true;
       const pointLightHelper = new THREE.PointLightHelper(pointLight, 8);
       this.scene.add(pointLight);
       this.scene.add(pointLightHelper);
-      // 立方体
-      let geometry = new THREE.BoxGeometry(2, 2, 2)
-      const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-      this.mesh = new THREE.Mesh(geometry, material)
-      this.scene.add(this.mesh)
+      // 创建平面
+      const planeGeometry = new THREE.PlaneGeometry(300, 300); // 生成平面几何
+      const planeMaterial = new THREE.MeshLambertMaterial();
+      const planeMesh = new THREE.Mesh(planeGeometry, planeMaterial); // 生成平面网格
+      planeMesh.receiveShadow = true; // 设置平面网格为接受阴影的投影面
+      planeMesh.rotation.x = -Math.PI / 2; //绕X轴旋转90度
+      planeMesh.name = "plane";
+      this.scene.add(planeMesh); // 添加到场景中
+      const gridHelper = new THREE.GridHelper(300, 300);
+      this.scene.add(gridHelper);
       // 控制器
       this.controls = new OrbitControls(this.camera,this.renderer.domElement)
-
+    },
+    addLightBar(){
+      const geometry = new THREE.BoxGeometry(1,2,1)
+      const TextureLoader = new THREE.TextureLoader().setPath('/texture/')
+      const texture = TextureLoader.load('t1.png')
+      const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 1,
+      })
+      let cube = new THREE.Mesh(geometry,[material,material,,,material,material])
+      cube.position.set(3.2,4,4.2)
+      this.scene.add(cube)
     },
     loadGltf(){
       let _this = this
       const GltfLoader = new GLTFLoader().setPath('/model/')
       GltfLoader.load('city.glb',function(gltf){
-        console.log("gltf",gltf)
+        gltf.scene.scale.set(3,3,3)
         _this.scene.add(gltf.scene)
       })
     },

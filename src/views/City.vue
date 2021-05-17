@@ -15,6 +15,8 @@ import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader.js";
 import { CopyShader } from "three/examples/jsm/shaders/CopyShader.js";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
+import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 export default {
   name: 'City',
@@ -34,12 +36,13 @@ export default {
   methods: {
     init(){
       this.setScene()
+      // this.loadObj()
+      this.loadGltf()
       this.animate()
     },
     setScene(){
       let container = document.getElementById("container")
       this.camera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.01, 10000)
-      // this.camera.up.set(0, 1, 0);
       this.camera.lookAt({
         x: 0,
         y: 0,
@@ -47,6 +50,8 @@ export default {
       })
       this.camera.position.set(80,80,80);
       this.scene = new THREE.Scene()
+      this.scene.background = new THREE.Color(0xcccccc);
+      this.scene.fog = new THREE.Fog(0xeeeeee,0.01,10000)
       // 辅助线
       this.scene.add(new THREE.AxesHelper(150))
       this.renderer = new THREE.WebGLRenderer({antialias: true})
@@ -59,15 +64,22 @@ export default {
       const pointLightHelper = new THREE.PointLightHelper(pointLight, 8);
       this.scene.add(pointLight);
       this.scene.add(pointLightHelper);
-
+      // 立方体
       let geometry = new THREE.BoxGeometry(2, 2, 2)
       const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
       this.mesh = new THREE.Mesh(geometry, material)
       this.scene.add(this.mesh)
-
       // 控制器
       this.controls = new OrbitControls(this.camera,this.renderer.domElement)
 
+    },
+    loadGltf(){
+      let _this = this
+      const GltfLoader = new GLTFLoader().setPath('/model/')
+      GltfLoader.load('city.glb',function(gltf){
+        console.log("gltf",gltf)
+        _this.scene.add(gltf.scene)
+      })
     },
     animate(){
       requestAnimationFrame(this.animate)

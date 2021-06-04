@@ -19,7 +19,6 @@ import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader.js";
 import { CopyShader } from "three/examples/jsm/shaders/CopyShader.js";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader";
-// import { TextureLoader } from "three/examples/jsm/loaders/TextureLoader";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import * as Stats from "stats.js";
@@ -35,6 +34,7 @@ export default {
       mesh: null,
       stats: null,
       container: null,
+      lightLine: null,
     };
   },
   mounted() {
@@ -45,6 +45,7 @@ export default {
       this.setScene();
       this.addStats();
       this.addLightBar();
+      this.addLgihtLine();
       this.loadGltf();
       this.animate();
     },
@@ -99,6 +100,32 @@ export default {
       this.stats.showPanel(0);
       this.container.appendChild(this.stats.dom);
     },
+    // 流光
+    addLgihtLine() {
+      this.lightLine = new THREE.TextureLoader().load("/texture/line.png");
+      // this.lightLine.wrapS = THREE.RepeatWrapping;
+      this.lightLine.wrapT = THREE.RepeatWrapping; //每个都重复
+      this.lightLine.repeat.set(1, 1);
+      this.lightLine.needsUpdate = true;
+      let material = new THREE.MeshBasicMaterial({
+        map: this.lightLine,
+        side: THREE.BackSide,
+        transparent: true,
+      });
+      // 创建顶点数组
+      let points = [
+        new THREE.Vector3(0, 3.3, 0),
+        new THREE.Vector3(6, 3.3, 0),
+        new THREE.Vector3(6, 3.3, 6),
+        new THREE.Vector3(0, 3.3, 6),
+      ];
+      // CatmullRomCurve3创建一条平滑的三维样条曲线
+      let curve = new THREE.CatmullRomCurve3(points); // 曲线路径
+      // 创建管道
+      let tubeGeometry = new THREE.TubeGeometry(curve, 120, 0.004);
+      let mesh = new THREE.Mesh(tubeGeometry, material);
+      this.scene.add(mesh);
+    },
     // 光柱
     addLightBar() {
       const geometry = new THREE.BoxGeometry(1, 2, 1);
@@ -109,6 +136,7 @@ export default {
         blending: THREE.AdditiveBlending,
         side: THREE.DoubleSide,
         transparent: true,
+        color: "#fff",
         opacity: 1,
       });
       let cube = new THREE.Mesh(geometry, [
@@ -133,10 +161,10 @@ export default {
     },
     // 摄像头
     moveCamera() {
-      let _this = this
+      let _this = this;
       //获取当前camera位置
       let camPosition = this.camera.position; //获取摄像机当前位置
-      console.log("camPosition",camPosition)
+      console.log("camPosition", camPosition);
       let newPosition = new THREE.Vertex(10, 10, 0); //设置目标位置
       let curve = addLines(camPosition, newPosition).curve; //绘制贝塞尔曲线
       //取curve的50个点
@@ -144,7 +172,11 @@ export default {
       let index = 0;
       //摄像机每50毫秒移动一个点的位置
       let a = setInterval(function () {
-        _this.camera.position.set(points[index].x, points[index].y, points[index].z);
+        _this.camera.position.set(
+          points[index].x,
+          points[index].y,
+          points[index].z
+        );
         _this.camera.lookAt(new THREE.Vertex(0, 0, 0));
         index++;
         if (index > 50) {
@@ -200,6 +232,9 @@ export default {
     animate() {
       requestAnimationFrame(this.animate);
       this.stats.update();
+      if(this.lightLine){
+        this.lightLine.offset.y -= 0.02
+      }
       this.renderer.render(this.scene, this.camera);
     },
   },

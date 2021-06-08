@@ -26,6 +26,9 @@ export default {
   name: "City",
   data() {
     return {
+      composer: null,
+      renderPass: null,
+      outlinePass: null,
       camera: null,
       scene: null,
       renderer: null,
@@ -35,6 +38,8 @@ export default {
       stats: null,
       container: null,
       lightLine: null,
+      cone: null,
+      clock: new THREE.Clock(),
     };
   },
   mounted() {
@@ -46,6 +51,7 @@ export default {
       this.addStats();
       this.addLightBar();
       this.addLgihtLine();
+      this.addCone()
       this.loadGltf();
       this.animate();
     },
@@ -73,6 +79,8 @@ export default {
         this.container.clientWidth,
         this.container.clientHeight
       );
+      this.composer = new EffectComposer(this.renderer);
+      this.composer.addPass(new RenderPass(this.scene, this.camera));
       this.container.appendChild(this.renderer.domElement);
       // 点光源
       const pointLight = new THREE.PointLight(0xffffff, 1, 10000);
@@ -149,6 +157,27 @@ export default {
       ]);
       cube.position.set(3.2, 4, 4.2);
       this.scene.add(cube);
+    },
+    // 三角锥
+    addCone() {
+      const geometry = new THREE.ConeGeometry(0.2, 0.3, 4);
+      const TextureLoader = new THREE.TextureLoader().setPath("/texture/");
+      const texture = TextureLoader.load("cone.png");
+      const emissiveMap = TextureLoader.load("emissive.png")
+      const material = new THREE.MeshPhysicalMaterial({
+        map: texture,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+        transparent: true,
+        color: "#fff",
+        opacity: 1,
+        emissiveMap: emissiveMap,
+        emissive: 0xffffff,
+      });
+      this.cone = new THREE.Mesh(geometry, material);
+      this.cone.position.set(5,5,5)
+      this.cone.rotation.x = Math.PI
+      this.scene.add(this.cone);
     },
     // 加载
     loadGltf() {
@@ -232,10 +261,17 @@ export default {
     animate() {
       requestAnimationFrame(this.animate);
       this.stats.update();
-      if(this.lightLine){
-        this.lightLine.offset.y -= 0.02
+      var time = this.clock.getDelta();
+      if (this.lightLine) {
+        this.lightLine.offset.y -= 0.02;
       }
-      this.renderer.render(this.scene, this.camera);
+      if(this.cone){
+        this.cone.rotation.y += 0.01
+      }
+      if (this.composer) {
+        this.composer.render();
+      }
+      // this.renderer.render(this.scene, this.camera);
     },
   },
 };

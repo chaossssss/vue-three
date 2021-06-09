@@ -26,6 +26,7 @@ export default {
   name: "City",
   data() {
     return {
+      container: '',
       composer: null,
       renderPass: null,
       outlinePass: null,

@@ -90,12 +90,16 @@ export default {
       this.container.appendChild(this.renderer.domElement);
       // 点光源
       const pointLight = new THREE.PointLight(0xffffff, 1, 100000000);
-      pointLight.layers.enable(0);
-      pointLight.layers.enable(1);
-      // pointLight.layers.set(1)
-      console.log(pointLight);
+      // pointLight.layers.enable(0);
+      // pointLight.layers.enable(1);
+      // console.log(pointLight);
       pointLight.position.set(6, 6, 0);
       pointLight.castShadow = true;
+      // 环境光
+      const light = new THREE.AmbientLight(0xffffff, 0.3);
+      light.layers.enable(0);
+      light.layers.enable(1);
+      this.scene.add(light);
       const pointLightHelper = new THREE.PointLightHelper(pointLight, 8);
       this.scene.add(pointLight);
       this.scene.add(pointLightHelper);
@@ -194,7 +198,7 @@ export default {
         color: 0xc3d400,
       });
       this.cone = new THREE.Mesh(geometry, bloomMtl);
-      this.cone.position.set(5, 5, 5);
+      this.cone.position.set(15, 5, 15);
       this.cone.rotation.x = Math.PI;
       this.cone.layers.set(1);
       console.log("this.cone", this.cone);
@@ -353,6 +357,7 @@ export default {
 
       this.camera.layers.set(0);
       this.renderer.render(this.scene, this.camera);
+      // this.bloomComposer.render();
 
       requestAnimationFrame(this.animate);
 

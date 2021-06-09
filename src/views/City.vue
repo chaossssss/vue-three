@@ -29,6 +29,8 @@ export default {
       composer: null,
       renderPass: null,
       outlinePass: null,
+      renderScene: null,
+      bloomComposer: null,
       camera: null,
       scene: null,
       renderer: null,
@@ -51,7 +53,9 @@ export default {
       this.addStats();
       this.addLightBar();
       this.addLgihtLine();
-      this.addCone()
+      // this.bloomPass();
+      this.setPass()
+      this.addCone();
       this.loadGltf();
       this.animate();
     },
@@ -79,11 +83,16 @@ export default {
         this.container.clientWidth,
         this.container.clientHeight
       );
-      this.composer = new EffectComposer(this.renderer);
-      this.composer.addPass(new RenderPass(this.scene, this.camera));
+      // this.composer = new EffectComposer(this.renderer);
+      // this.renderScene = new RenderPass(this.scene, this.camera);
+      // this.composer.addPass(this.renderScene);
       this.container.appendChild(this.renderer.domElement);
       // 点光源
-      const pointLight = new THREE.PointLight(0xffffff, 1, 10000);
+      const pointLight = new THREE.PointLight(0xffffff, 1, 100000000);
+      pointLight.layers.enable(0);
+      pointLight.layers.enable(1);
+      // pointLight.layers.set(1)
+      console.log(pointLight);
       pointLight.position.set(6, 6, 0);
       pointLight.castShadow = true;
       const pointLightHelper = new THREE.PointLightHelper(pointLight, 8);
@@ -96,6 +105,7 @@ export default {
       planeMesh.receiveShadow = true; // 设置平面网格为接受阴影的投影面
       planeMesh.rotation.x = -Math.PI / 2; //绕X轴旋转90度
       planeMesh.name = "plane";
+      planeMesh.layers.set(0);
       this.scene.add(planeMesh); // 添加到场景中
       const gridHelper = new THREE.GridHelper(300, 300);
       this.scene.add(gridHelper);
@@ -132,6 +142,7 @@ export default {
       // 创建管道
       let tubeGeometry = new THREE.TubeGeometry(curve, 120, 0.004);
       let mesh = new THREE.Mesh(tubeGeometry, material);
+      mesh.layers.set(0);
       this.scene.add(mesh);
     },
     // 光柱
@@ -156,6 +167,7 @@ export default {
         material,
       ]);
       cube.position.set(3.2, 4, 4.2);
+      cube.layers.set(0);
       this.scene.add(cube);
     },
     // 三角锥
@@ -163,21 +175,84 @@ export default {
       const geometry = new THREE.ConeGeometry(0.2, 0.3, 4);
       const TextureLoader = new THREE.TextureLoader().setPath("/texture/");
       const texture = TextureLoader.load("cone.png");
-      const emissiveMap = TextureLoader.load("emissive.png")
-      const material = new THREE.MeshPhysicalMaterial({
-        map: texture,
-        blending: THREE.AdditiveBlending,
-        side: THREE.DoubleSide,
-        transparent: true,
-        color: "#fff",
-        opacity: 1,
-        emissiveMap: emissiveMap,
-        emissive: 0xffffff,
+      // const emissiveMap = TextureLoader.load("emissive.png");
+      // const material = new THREE.MeshPhysicalMaterial({
+      //   map: texture,
+      //   blending: THREE.AdditiveBlending,
+      //   side: THREE.DoubleSide,
+      //   transparent: true,
+      //   color: "#fff",
+      //   opacity: 1,
+      //   emissiveMap: emissiveMap,
+      //   emissive: 0xffffff,
+      // });
+      // this.cone = new THREE.Mesh(geometry, material);
+
+      // 发光方块
+      const bloomMtl = new THREE.MeshLambertMaterial({
+        color: 0xc3d400,
       });
-      this.cone = new THREE.Mesh(geometry, material);
-      this.cone.position.set(5,5,5)
-      this.cone.rotation.x = Math.PI
+      this.cone = new THREE.Mesh(geometry, bloomMtl);
+      this.cone.position.set(5, 5, 5);
+      this.cone.rotation.x = Math.PI;
+      this.cone.layers.set(1);
+      console.log("this.cone", this.cone);
       this.scene.add(this.cone);
+
+      // this.cone.position.set(5, 5, 5);
+      // this.cone.rotation.x = Math.PI;
+      // this.scene.add(this.cone);
+    },
+    // bloomPass() {
+    //   // 光晕
+    //   const params = {
+    //     exposure: 0,
+    //     bloomStrength: 1.5,
+    //     bloomThreshold: 0,
+    //     bloomRadius: 0,
+    //   };
+    //   const bloomPass = new UnrealBloomPass(
+    //     new THREE.Vector2(
+    //       this.container.clientWidth,
+    //       this.container.clientHeight
+    //     ),
+    //     1.5,
+    //     0.4,
+    //     0.85
+    //   );
+    //   bloomPass.threshold = params.bloomThreshold;
+    //   bloomPass.strength = params.bloomStrength;
+    //   bloomPass.radius = params.bloomRadius;
+    //   bloomPass.renderToScreen = true
+    //   this.composer.addPass(this.renderScene);
+    //   this.composer.addPass(bloomPass);
+    // },
+    setPass() {
+      // RenderPass这个通道会渲染场景，但不会将渲染结果输出到屏幕上
+
+      // this.composer = new EffectComposer(this.renderer);
+      this.renderScene = new RenderPass(this.scene, this.camera);
+      // this.composer.addPass(this.renderScene);
+
+      // const renderScene = new RenderPass(this.scene, this.camera);
+
+      const effectCopy = new ShaderPass(CopyShader); //传入了CopyShader着色器，用于拷贝渲染结果
+      effectCopy.renderToScreen = true;
+      // THREE.BloomPass(strength, kernelSize, sigma, Resolution)
+      // strength 定义泛光效果的强度，值越高，明亮的区域越明亮，而且渗入较暗区域的也就越多
+      // kernelSize 控制泛光的偏移量
+      // sigma 控制泛光的锐利程度，值越高，泛光越模糊
+      // Resolution 定义泛光的解析图，如果该值太低，结果的方块化就会越严重
+      const bloomPass = new BloomPass(2, 25, 4.0, 256); //BloomPass通道效果
+
+      //创建效果组合器对象，可以在该对象上添加后期处理通道，通过配置该对象，使它可以渲染我们的场景，并应用额外的后期处理步骤，在render循环中，使用EffectComposer渲染场景、应用通道，并输出结果。
+      this.bloomComposer = new EffectComposer(this.renderer);
+      this.bloomComposer.setSize(window.innerWidth, window.innerHeight);
+      this.bloomComposer.addPass(this.renderScene);
+      this.bloomComposer.addPass(bloomPass);
+      this.bloomComposer.addPass(effectCopy);
+
+      this.bloomComposer.render();
     },
     // 加载
     loadGltf() {
@@ -185,6 +260,7 @@ export default {
       const GltfLoader = new GLTFLoader().setPath("/model/");
       GltfLoader.load("city.glb", function (gltf) {
         gltf.scene.scale.set(3, 3, 3);
+        gltf.scene.layers.set(0);
         _this.scene.add(gltf.scene);
       });
     },
@@ -259,19 +335,29 @@ export default {
       }
     },
     animate() {
-      requestAnimationFrame(this.animate);
       this.stats.update();
       var time = this.clock.getDelta();
       if (this.lightLine) {
         this.lightLine.offset.y -= 0.02;
       }
-      if(this.cone){
-        this.cone.rotation.y += 0.01
+      if (this.cone) {
+        this.cone.rotation.y += 0.01;
       }
-      if (this.composer) {
-        this.composer.render();
-      }
-      // this.renderer.render(this.scene, this.camera);
+      this.renderer.autoClear = false;
+      this.renderer.clear();
+      this.camera.layers.set(1);
+      // this.composer.render();
+      this.bloomComposer.render();
+      this.renderer.clearDepth(); // 清除深度缓存
+
+      this.camera.layers.set(0);
+      this.renderer.render(this.scene, this.camera);
+
+      requestAnimationFrame(this.animate);
+
+      // if (this.composer) {
+      //   this.composer.render();
+      // }
     },
   },
 };

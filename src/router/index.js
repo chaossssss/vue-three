@@ -31,6 +31,16 @@ const routes = [
     component: () => import('../views/City2.vue')
   },
   {
+    path: '/City3',
+    name: 'City3',
+    component: () => import('../views/City3.vue')
+  },
+  {
+    path: '/Unrealbloom',
+    name: 'Unrealbloom',
+    component: () => import('../views/Unrealbloom.vue')
+  },
+  {
     path: '/MyModel',
     name: 'MyModel',
     component: () => import('../views/MyModel.vue')

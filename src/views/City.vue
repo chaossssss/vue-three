@@ -26,12 +26,13 @@ export default {
   name: "City",
   data() {
     return {
-      container: '',
+      container: "",
       composer: null,
       renderPass: null,
       outlinePass: null,
       renderScene: null,
       bloomComposer: null,
+      finalComposer: null,
       camera: null,
       scene: null,
       renderer: null,
@@ -43,6 +44,8 @@ export default {
       lightLine: null,
       cone: null,
       clock: new THREE.Clock(),
+      vertexShader: "",
+      shaderMaterials: {},
     };
   },
   mounted() {
@@ -54,8 +57,9 @@ export default {
       this.addStats();
       this.addLightBar();
       this.addLgihtLine();
-      // this.bloomPass();
-      this.setPass()
+      this.bloomPass();
+      // this.setPass()
+      this.wireframe()
       this.addCone();
       this.loadGltf();
       this.animate();
@@ -84,8 +88,8 @@ export default {
         this.container.clientWidth,
         this.container.clientHeight
       );
-      // this.composer = new EffectComposer(this.renderer);
-      // this.renderScene = new RenderPass(this.scene, this.camera);
+      this.composer = new EffectComposer(this.renderer);
+      this.renderScene = new RenderPass(this.scene, this.camera);
       // this.composer.addPass(this.renderScene);
       this.container.appendChild(this.renderer.domElement);
       // 点光源
@@ -97,8 +101,8 @@ export default {
       pointLight.castShadow = true;
       // 环境光
       const light = new THREE.AmbientLight(0xffffff, 0.3);
-      light.layers.enable(0);
-      light.layers.enable(1);
+      // light.layers.enable(0);
+      // light.layers.enable(1);
       this.scene.add(light);
       const pointLightHelper = new THREE.PointLightHelper(pointLight, 8);
       this.scene.add(pointLight);
@@ -147,7 +151,7 @@ export default {
       // 创建管道
       let tubeGeometry = new THREE.TubeGeometry(curve, 120, 0.004);
       let mesh = new THREE.Mesh(tubeGeometry, material);
-      mesh.layers.set(0);
+      // mesh.layers.set(0);
       this.scene.add(mesh);
     },
     // 光柱
@@ -172,7 +176,7 @@ export default {
         material,
       ]);
       cube.position.set(3.2, 4, 4.2);
-      cube.layers.set(0);
+      // cube.layers.set(0);
       this.scene.add(cube);
     },
     // 三角锥
@@ -180,58 +184,107 @@ export default {
       const geometry = new THREE.ConeGeometry(0.2, 0.3, 4);
       const TextureLoader = new THREE.TextureLoader().setPath("/texture/");
       const texture = TextureLoader.load("cone.png");
-      // const emissiveMap = TextureLoader.load("emissive.png");
-      // const material = new THREE.MeshPhysicalMaterial({
-      //   map: texture,
-      //   blending: THREE.AdditiveBlending,
-      //   side: THREE.DoubleSide,
-      //   transparent: true,
-      //   color: "#fff",
-      //   opacity: 1,
-      //   emissiveMap: emissiveMap,
-      //   emissive: 0xffffff,
-      // });
-      // this.cone = new THREE.Mesh(geometry, material);
+      const emissiveMap = TextureLoader.load("emissive.png");
+      const material = new THREE.MeshPhysicalMaterial({
+        map: texture,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+        transparent: true,
+        color: "#fff",
+        opacity: 0.5,
+        emissiveMap: emissiveMap,
+        emissive: 0xffffff,
+      });
+      this.cone = new THREE.Mesh(geometry, material);
 
       // 发光方块
-      const bloomMtl = new THREE.MeshLambertMaterial({
-        color: 0xc3d400,
-      });
-      this.cone = new THREE.Mesh(geometry, bloomMtl);
-      this.cone.position.set(15, 5, 15);
-      this.cone.rotation.x = Math.PI;
-      this.cone.layers.set(1);
-      console.log("this.cone", this.cone);
-      this.scene.add(this.cone);
-
-      // this.cone.position.set(5, 5, 5);
+      // const bloomMtl = new THREE.MeshLambertMaterial({
+      //   color: 0xc3d400,
+      // });
+      // this.cone = new THREE.Mesh(geometry, bloomMtl);
+      // this.cone.position.set(15, 5, 15);
       // this.cone.rotation.x = Math.PI;
+      // this.cone.layers.set(1);
+      // console.log("this.cone", this.cone);
       // this.scene.add(this.cone);
+
+      this.cone.position.set(5, 5, 5);
+      this.cone.rotation.x = Math.PI;
+      this.scene.add(this.cone);
     },
-    // bloomPass() {
-    //   // 光晕
-    //   const params = {
-    //     exposure: 0,
-    //     bloomStrength: 1.5,
-    //     bloomThreshold: 0,
-    //     bloomRadius: 0,
-    //   };
-    //   const bloomPass = new UnrealBloomPass(
-    //     new THREE.Vector2(
-    //       this.container.clientWidth,
-    //       this.container.clientHeight
-    //     ),
-    //     1.5,
-    //     0.4,
-    //     0.85
-    //   );
-    //   bloomPass.threshold = params.bloomThreshold;
-    //   bloomPass.strength = params.bloomStrength;
-    //   bloomPass.radius = params.bloomRadius;
-    //   bloomPass.renderToScreen = true
-    //   this.composer.addPass(this.renderScene);
-    //   this.composer.addPass(bloomPass);
-    // },
+    wireframe() {
+      const geometry = new THREE.BoxGeometry(1, 2, 1);
+      var wireframeMaterial = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        wireframe: true,
+        transparent: true,
+      });
+      var wireframe = new THREE.Mesh(geometry, wireframeMaterial);
+      this.scene.add(wireframe);
+      wireframe.position.set(3,6,0)
+    },
+    bloomPass() {
+      // 光晕
+      const params = {
+        exposure: 0,
+        bloomStrength: 1.5,
+        bloomThreshold: 0,
+        bloomRadius: 0,
+      };
+      const bloomPass = new UnrealBloomPass(
+        new THREE.Vector2(
+          this.container.clientWidth,
+          this.container.clientHeight
+        ),
+        1.5,
+        0.4,
+        0.85
+      );
+      bloomPass.threshold = params.bloomThreshold;
+      bloomPass.strength = params.bloomStrength;
+      bloomPass.radius = params.bloomRadius;
+      bloomPass.renderToScreen = true;
+      this.composer.addPass(this.renderScene);
+      this.composer.addPass(bloomPass);
+
+      const bloomComposer = new EffectComposer(this.renderer);
+      bloomComposer.renderToScreen = false;
+      bloomComposer.addPass(this.renderScene);
+      bloomComposer.addPass(bloomPass);
+      let vertexShader = [
+        "varying vec2 vUv;",
+        "void main() {",
+        "vUv = uv;",
+        "gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
+        "}",
+      ].join("\n");
+      let fragmentShader = [
+        "uniform sampler2D baseTexture;",
+        "uniform sampler2D bloomTexture;",
+        "varying vec2 vUv;",
+        "void main() {",
+        "gl_FragColor = ( texture2D( baseTexture, vUv ) + vec4( 1.0 ) * texture2D( bloomTexture, vUv ) );",
+        "}",
+      ].join("\n");
+
+      const finalPass = new ShaderPass(
+        new THREE.ShaderMaterial({
+          uniforms: {
+            baseTexture: { value: null },
+            bloomTexture: { value: bloomComposer.renderTarget2.texture },
+          },
+          vertexShader: vertexShader,
+          fragmentShader: fragmentShader,
+          defines: {},
+        }),
+        "baseTexture"
+      );
+      finalPass.needsSwap = true;
+
+      this.finalComposer = new EffectComposer(this.renderer);
+      this.finalComposer.addPass(this.renderScene);
+      this.finalComposer.addPass(finalPass);
+    },
     setPass() {
       // RenderPass这个通道会渲染场景，但不会将渲染结果输出到屏幕上
 
@@ -339,6 +392,8 @@ export default {
         return v1.lerp(v2, len / v1v2Len);
       }
     },
+    // 扫描
+    scanning() {},
     animate() {
       this.stats.update();
       var time = this.clock.getDelta();
@@ -351,19 +406,14 @@ export default {
       this.renderer.autoClear = false;
       this.renderer.clear();
       this.camera.layers.set(1);
-      // this.composer.render();
-      this.bloomComposer.render();
+      this.composer.render();
+      this.finalComposer.render()
       this.renderer.clearDepth(); // 清除深度缓存
 
       this.camera.layers.set(0);
       this.renderer.render(this.scene, this.camera);
-      // this.bloomComposer.render();
 
       requestAnimationFrame(this.animate);
-
-      // if (this.composer) {
-      //   this.composer.render();
-      // }
     },
   },
 };

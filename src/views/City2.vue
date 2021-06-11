@@ -51,13 +51,14 @@ export default {
       this.scene = new THREE.Scene();
       // 相机
       this.camera = new THREE.PerspectiveCamera(
-        70,
+        75,
         this.container.clientWidth / this.container.clientHeight,
-        1,
-        100000
+        0.01,
+        1000000000
       );
       this.camera.position.set(50, 50, 50);
       this.camera.position.y = 50;
+      this.camera.lookAt(0,0,0)
       // 渲染器
       this.renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -76,7 +77,13 @@ export default {
 
       // 创建平面
       const planeGeometry = new THREE.PlaneGeometry(300, 300); // 生成平面几何
-      const planeMaterial = new THREE.MeshLambertMaterial();
+      const planeMaterial = new THREE.MeshBasicMaterial({
+        color: "#ccc",
+        side: THREE.DoubleSide,
+        // depthTest:false,
+        // depthWrite: false,
+        transparent: true
+      });
       const planeMesh = new THREE.Mesh(planeGeometry, planeMaterial); // 生成平面网格
       // planeMesh.receiveShadow = true; // 设置平面网格为接受阴影的投影面
       planeMesh.rotation.x = -Math.PI / 2; //绕X轴旋转90度
@@ -109,7 +116,8 @@ export default {
       var geometry1 = new THREE.BoxGeometry(4, 4, 4);
       var material1 = new THREE.MeshBasicMaterial({
         color: 0x00ff00,
-        depthTest:false
+        depthTest:false,
+        // depthWrite: true
       });
       var cube1 = new THREE.Mesh(geometry1, material1);
       // 重要代码，将当前创建的box分配到0层

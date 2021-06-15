@@ -22,6 +22,15 @@ import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import * as Stats from "stats.js";
+import { Radar } from "../utils/index";
+var clock = new THREE.Clock();
+var StartTime = {
+  value: 0,
+};
+var isStart = false;
+var time = {
+  value: 0,
+};
 export default {
   name: "City",
   data() {
@@ -46,6 +55,11 @@ export default {
       clock: new THREE.Clock(),
       vertexShader: "",
       shaderMaterials: {},
+      time: {
+        value: 0,
+      },
+      effectGroup: null,
+      MeshGroup: null,
     };
   },
   mounted() {
@@ -59,9 +73,10 @@ export default {
       this.addLgihtLine();
       this.bloomPass();
       // this.setPass()
-      this.wireframe()
+      this.wireframe();
       this.addCone();
       this.loadGltf();
+      this.scanning();
       this.animate();
     },
     setScene() {
@@ -120,6 +135,12 @@ export default {
       this.scene.add(gridHelper);
       // 控制器
       this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+
+      this.MeshGroup = new THREE.Group();
+
+      this.effectGroup = new THREE.Group();
+
+      this.MeshGroup.add(this.effectGroup);
     },
     // 状态栏
     addStats() {
@@ -221,7 +242,7 @@ export default {
       });
       var wireframe = new THREE.Mesh(geometry, wireframeMaterial);
       this.scene.add(wireframe);
-      wireframe.position.set(3,6,0)
+      wireframe.position.set(3, 6, 0);
     },
     bloomPass() {
       // 光晕
@@ -320,6 +341,7 @@ export default {
         gltf.scene.scale.set(3, 3, 3);
         gltf.scene.layers.set(0);
         _this.scene.add(gltf.scene);
+        console.log(gltf);
       });
     },
     // 摄像头
@@ -393,10 +415,50 @@ export default {
       }
     },
     // 扫描
-    scanning() {},
+    scanning() {
+      let _this = this;
+      const radarData = [
+        {
+          position: {
+            x: 0,
+            y: 0,
+            z: 0,
+          },
+          radius: 50,
+          color: "#ff0000",
+          opacity: 0.5,
+          speed: 2,
+        },
+      ];
+
+      _this.scene.add(_this.MeshGroup);
+      setTimeout(() => {
+        // 加载扫描效果
+        radarData.forEach((data) => {
+          const mesh = Radar(data);
+          mesh.material.uniforms.time = time;
+          _this.effectGroup.add(mesh);
+        });
+      }, 1000);
+    },
     animate() {
       this.stats.update();
-      var time = this.clock.getDelta();
+      let dt = clock.getDelta();
+
+      if (dt > 1) return false;
+      time.value += dt;
+      // time = {
+      //   value: time.value + dt
+      // }
+      // 启动
+      if (isStart) {
+        StartTime.value += dt * 0.5;
+        if (StartTime.value >= 1) {
+          StartTime.value = 1;
+          isStart = false;
+        }
+      }
+
       if (this.lightLine) {
         this.lightLine.offset.y -= 0.02;
       }
@@ -407,7 +469,7 @@ export default {
       this.renderer.clear();
       this.camera.layers.set(1);
       this.composer.render();
-      this.finalComposer.render()
+      this.finalComposer.render();
       this.renderer.clearDepth(); // 清除深度缓存
 
       this.camera.layers.set(0);
